@@ -278,7 +278,7 @@ void run_command_cycle(bool& running, Mode& mode)
 {
     std::string input;
 
-    std::cout << "irm> ";
+    std::cout << "\e[35mirm> \e[0m";
     std::getline(std::cin, input);
 
     Command cmd = parse_input(input);

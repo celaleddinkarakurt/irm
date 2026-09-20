@@ -20,6 +20,7 @@ int run_application()
                 run_command_cycle(running, mode);
                 break;
             case ModeType::EDITOR:
+                run_editor(mode);
                 break;
             case ModeType::IMAGE:
                 break;
