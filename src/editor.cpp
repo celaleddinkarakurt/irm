@@ -13,6 +13,10 @@ Editor::Editor(Cursor cursor, std::vector<std::string> buffer)
 void run_editor(Mode& mode)
 {
     Editor& editor = std::get<Editor>(mode.data);
+
+    Cursor& cursor = editor.cursor;
+    auto& buffer = editor.buffer;
+
     
     if (!enable_raw_mode())
     {
@@ -32,30 +36,68 @@ void run_editor(Mode& mode)
         switch (key.type)
         {
             case CHARACTER:
-                
+                buffer[cursor.row].insert(cursor.col, std::string(1, key.c));
+                cursor.col++;
 
                 break;
             case ENTER:
+                buffer.insert(buffer.begin() + cursor.row + 1, buffer[cursor.row].substr(cursor.col));
+                buffer[cursor.row].erase(cursor.col);
+
+                cursor.row++;
+                cursor.col = 0;
+
                 break;
             case BACKSPACE:
+                if (cursor.col > 0)
+                {
+                    cursor.col--;
+                    buffer[cursor.row].erase(cursor.col, 1);
+
+                    break;
+                }
+
+                if (cursor.col == 0 && cursor.row != 0)
+                {
+                    cursor.row--;
+                    cursor.col = buffer[cursor.row].size();
+
+                    buffer[cursor.row] += buffer[cursor.row + 1];
+                    buffer.erase(buffer.begin() + cursor.row + 1);
+                }
+
                 break;
             case ESCAPE:
                 running = false;
                 break;
             case ARROW_UP:
-                if (editor.cursor.row > 0) editor.cursor.row--;
+                if (cursor.row > 0)
+                {
+                    cursor.row--;
+
+                    if (buffer[cursor.row].size() < cursor.col)
+                        cursor.col = buffer[cursor.row].size();
+                }
 
                 break;
             case ARROW_DOWN:
-                if (editor.cursor.row < editor.buffer.size()) editor.cursor.row++;
+                if (cursor.row < (buffer.size() - 1))
+                {
+                    cursor.row++;
+                    
+                    if (buffer[cursor.row].size() < cursor.col)
+                        cursor.col = buffer[cursor.row].size();
+                }
 
                 break;
             case ARROW_LEFT:
-                if (editor.cursor.col > 0) editor.cursor.col--;    
+                if (cursor.col > 0) 
+                    cursor.col--;    
 
                 break;
             case ARROW_RIGHT:
-                if (editor.cursor.col < editor.buffer.size()) editor.cursor.col++;    
+                if (cursor.col < buffer[cursor.row].size()) 
+                    cursor.col++;
 
                 break;
             default:
