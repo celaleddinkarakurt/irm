@@ -73,6 +73,7 @@ Key read_key()
                 key.type = ENTER;
                 break;
             case '\b':
+            case '\x7f':
                 key.type = BACKSPACE;
                 break;
             default:
