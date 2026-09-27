@@ -4,7 +4,7 @@
 #include <pwd.h>
 #include <filesystem>
 
-std::vector<std::string> initialize_path()
+std::vector<std::string> initialize_path(void)
 {
     struct passwd* pw = getpwuid(getuid());
     std::string rawPath = pw->pw_dir;
@@ -21,7 +21,7 @@ std::vector<std::string> initialize_path()
 
 std::vector<std::string> current_path = initialize_path();
 
-std::string get_path()
+std::string get_path(void)
 {
     std::string path;
 

@@ -16,4 +16,6 @@ add_executable(irm
     src/image_viewer.cpp
     src/mode.cpp
     src/application.cpp
+    src/renderer.cpp
+    src/layout.cpp
 )

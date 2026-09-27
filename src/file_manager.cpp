@@ -183,6 +183,45 @@ FileStatus rename_path(const std::string& oldName, const std::string& newName)
     return SUCCESS;
 }
 
+FileStatus save_file(const std::string& path, const std::vector<std::string>& buffer, bool ends_with_new_line)
+{
+    std::ofstream file(path);
+
+    if (!file.is_open())
+    {
+        return CANNOT_OPEN;
+    }
+
+    for (size_t i = 0; i < buffer.size(); i++)
+    {
+        file << buffer[i];
+
+        if (!file)
+        {
+            return UNKNOWN_ERROR;
+        }
+
+        if (i < buffer.size() - 1 || ends_with_new_line)
+        {
+            file << "\n";
+
+            if (!file)
+            {
+                return UNKNOWN_ERROR;
+            }
+        }
+    }
+
+    file.flush();
+
+    if (!file)
+    {
+        return UNKNOWN_ERROR;
+    }
+    
+    return SUCCESS;
+}
+
 FileReadResult read_file(const std::string& fileName)
 {
     FileReadResult result;
@@ -197,17 +236,17 @@ FileReadResult read_file(const std::string& fileName)
     {
         if (ec == std::errc::permission_denied)
         {
-            result = { PERMISSION_DENIED, content };
+            result = { PERMISSION_DENIED, content, false };
             return result;
         }
 
-        result = { UNKNOWN_ERROR, content};
+        result = { UNKNOWN_ERROR, content, false };
         return result;
     }
 
     if (!exists)
     {
-        result = { NOT_FOUND, content };
+        result = { NOT_FOUND, content, false };
         return result;
     }
 
@@ -215,7 +254,7 @@ FileReadResult read_file(const std::string& fileName)
 
     if (!file.is_open())
     {
-        result = { CANNOT_OPEN, content };
+        result = { CANNOT_OPEN, content, false };
         return result;
     }
 
@@ -224,7 +263,28 @@ FileReadResult read_file(const std::string& fileName)
     {
         content.push_back(line);
     }
+
+    bool ends_with_new_line = false;
+
+    file.clear();
+    file.seekg(0, std::ios::end);
+
+    std::streampos file_size = file.tellg();
+
+    if (file_size > 0)
+    {
+        file.seekg(-1, std::ios::end);
+
+        char last_char;
+        if (!file.get(last_char))
+        {
+            result = { UNKNOWN_ERROR, content, false };
+            return result;
+        }
+
+        ends_with_new_line = (last_char == '\n');
+    }
     
-    result = { SUCCESS, content };
+    result = { SUCCESS, content, ends_with_new_line };
     return result;
 }

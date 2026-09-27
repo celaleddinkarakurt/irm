@@ -5,9 +5,9 @@
 #include "image_viewer.hpp"
 #include <iostream>
 
-int run_application()
+int run_application(void)
 {
-    std::cout << "\x1b[3J\x1b[2J\x1b[H" << std::flush;
+    std::cout << "\x1b[2J\x1b[3J\x1b[H" << std::flush;
 
     Mode mode = { ModeType::COMMAND, std::monostate{} };
     
@@ -27,5 +27,7 @@ int run_application()
         }
     }
 
+    std::cout << "\x1b[2J\x1b[3J\x1b[H" << std::flush;
+    
     return 0;
 }

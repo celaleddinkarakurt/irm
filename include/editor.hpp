@@ -16,8 +16,10 @@ struct Editor
 {
     Cursor cursor;
     std::vector<std::string> buffer;
+    std::string file_path;
+    bool ends_with_new_line;
 
-    Editor(Cursor cursor, std::vector<std::string> buffer);
+    Editor(Cursor cursor, std::vector<std::string> buffer, std::string file_path, bool ends_with_new_line);
 };
 
 void run_editor(Mode& mode);

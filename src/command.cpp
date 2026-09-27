@@ -1,6 +1,7 @@
 #include "command.hpp"
 #include "file_manager.hpp"
 #include "editor.hpp"
+#include "app_state.hpp"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -197,28 +198,29 @@ void execute_command(const Command& cmd, Mode& mode, bool& running)
 
             break;
         case CommandTypes::OPEN:
+        {
+            FileReadResult read_result = read_file(cmd.commands[0]);
+
+            switch (read_result.status)
             {
-                FileReadResult read_result = read_file(cmd.commands[0]);
-
-                switch (read_result.status)
+                case FileStatus::SUCCESS:
                 {
-                    case FileStatus::SUCCESS:
-                    {
-                        mode = { ModeType::EDITOR, Editor{ {0, 0}, std::move(read_result.content) }};
+                    std::string file_path = get_path() + "/" + cmd.commands[0];
+                    mode = { ModeType::EDITOR, Editor{{ 0, 0 }, std::move(read_result.content), file_path, read_result.ends_with_new_line}};
 
-                        break;
-                    }
-                    case FileStatus::NOT_FOUND:
-                        break;
-                    case FileStatus::PERMISSION_DENIED:
-                        break;         
-                    default:
-                        std::cout << "An error occurred.\n";
-                        break;
+                    break;
                 }
+                case FileStatus::NOT_FOUND:
+                    break;
+                case FileStatus::PERMISSION_DENIED:
+                    break;         
+                default:
+                    std::cout << "An error occurred.\n";
+                    break;
+            }
                 
-                break;
-            }    
+            break;
+        }
         case CommandTypes::DELETE:
             result = delete_path(cmd.commands[0]);
 

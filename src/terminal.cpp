@@ -1,14 +1,17 @@
 #include "terminal.hpp"
 #include <termios.h>
+#include <sys/ioctl.h>
 #include <unistd.h>
 #include <cerrno>
 #include <poll.h>
 #include <optional>
+#include <string>
+#include <cstring>
 
 termios original_settings;
 bool isEnable = false;
 
-bool enable_raw_mode()
+bool enable_raw_mode(void)
 {
     if (isEnable) return false;
 
@@ -17,6 +20,7 @@ bool enable_raw_mode()
     original_settings = raw;
 
     raw.c_lflag &= ~(ECHO | ICANON);
+    raw.c_iflag &= ~(IXON);
     raw.c_cc[VMIN] = 1;
     raw.c_cc[VTIME] = 0;
 
@@ -26,7 +30,7 @@ bool enable_raw_mode()
     return true;
 }
 
-bool disable_raw_mode()
+bool disable_raw_mode(void)
 {
     if (!isEnable) return false;
 
@@ -54,7 +58,7 @@ bool input_available()
     return ret > 0 && (pfd.revents & POLLIN) != 0;
 }
 
-Key read_key()
+Key read_key(void)
 {
     Key key;
 
@@ -75,6 +79,9 @@ Key read_key()
             case '\b':
             case '\x7f':
                 key.type = BACKSPACE;
+                break;
+            case '\x13':
+                key.type = SAVE;
                 break;
             default:
                 key.type = CHARACTER;
@@ -136,4 +143,80 @@ Key read_key()
 
     key.type = ESCAPE;
     return key;
+}
+
+TerminalSize get_terminal_size(void)
+{
+    winsize ws{};
+    TerminalSize size;
+
+    if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &ws) == -1 || ws.ws_col == 0) {
+        size.status = SizeStatus::ERROR;
+        return size;
+    }
+
+    size.status = SizeStatus::SUCCESS;
+    size.width = ws.ws_col;
+    size.height = ws.ws_row;
+    return size;
+}
+
+void move_cursor(size_t row, size_t col)
+{
+    row += 1;
+    col += 1;
+
+    std::string cmd = "\x1b[" + std::to_string(row) + ";" + std::to_string(col) + "H";
+    write(STDOUT_FILENO, cmd.data(), cmd.size());
+}
+
+void clear_to_end_of_line(void)
+{
+    const char cmd[] = "\x1b[0K";
+
+    write(STDOUT_FILENO, cmd, sizeof(cmd) - 1);
+}
+
+void insert_line(void)
+{
+    const char cmd[] = "\x1b[L";
+
+    write(STDOUT_FILENO, cmd, sizeof(cmd) - 1);
+}
+
+void delete_line(void)
+{
+    const char cmd[] = "\x1b[M";
+
+    write(STDOUT_FILENO, cmd, sizeof(cmd) - 1);
+}
+
+void write_text(const std::string& text)
+{
+    write(STDOUT_FILENO, text.data(), text.size());
+}
+
+void write_colored_text(const std::string& text, Color color)
+{
+    const char* color_code = "";
+
+    switch (color)
+    {
+        case Color::GREEN:
+            color_code = "\x1b[32m";
+            break;
+        case Color::DEFAULT:
+            color_code = "\x1b[0m";
+            break;
+    }
+
+    write(STDOUT_FILENO, color_code, strlen(color_code));
+    write(STDOUT_FILENO, text.data(), text.size());
+    write(STDOUT_FILENO, "\x1b[0m", 4);
+}
+
+void clear_screen()
+{
+    const char cmd[] = "\x1b[2J\x1b[3J\x1b[H";
+    write(STDOUT_FILENO, cmd, sizeof(cmd) - 1);
 }

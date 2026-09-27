@@ -3,7 +3,7 @@
 
 #include <string>
 
-std::string get_path();
+std::string get_path(void);
 void change_path(std::string path);
 
 #endif
