@@ -114,7 +114,7 @@ CommandResult check_command(const Command& cmd)
 
             break;
         case CommandTypes::MOVE:
-            if (cmd.commands.size() != 1)
+            if (cmd.commands.empty())
             {
                 cmdResult = { CommandStatus::INVALID_ARGUMENT_COUNT, cmd };
             }
@@ -122,6 +122,8 @@ CommandResult check_command(const Command& cmd)
             {
                 cmdResult = { CommandStatus::OK, cmd };
             }
+
+            break;
         case CommandTypes::IMAGE:
             if (cmd.commands.size() != 1)
             {
@@ -260,7 +262,18 @@ void execute_command(const Command& cmd, Mode& mode, bool& running)
             break;
         case CommandTypes::MOVE:
         {
-            PathStatus result = change_path(cmd.commands[0]);
+            std::string path;
+            for (size_t i = 0; i < cmd.commands.size(); i++)
+            {
+                path += cmd.commands[i];
+
+                if (i != cmd.commands.size() - 1)
+                {
+                    path += " ";
+                }
+            }
+
+            PathStatus result = change_path(path);
 
             switch (result)
             {
