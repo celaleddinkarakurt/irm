@@ -40,6 +40,10 @@ Command parse_input(const std::string& input)
     {
         cmd = { CommandTypes::RENAME, commands };
     }
+    else if (commandType == "move")
+    {
+        cmd = { CommandTypes::MOVE, commands };
+    }
     else if (commandType == "image")
     {
         cmd = { CommandTypes::IMAGE, commands };
@@ -109,6 +113,15 @@ CommandResult check_command(const Command& cmd)
             }
 
             break;
+        case CommandTypes::MOVE:
+            if (cmd.commands.size() != 1)
+            {
+                cmdResult = { CommandStatus::INVALID_ARGUMENT_COUNT, cmd };
+            }
+            else
+            {
+                cmdResult = { CommandStatus::OK, cmd };
+            }
         case CommandTypes::IMAGE:
             if (cmd.commands.size() != 1)
             {
@@ -138,27 +151,6 @@ CommandResult check_command(const Command& cmd)
     }
 
     return cmdResult;
-}
-
-void handle_command_result(const CommandResult& cmdResult, Mode& mode, bool& running)
-{
-    switch (cmdResult.status)
-    {
-        case CommandStatus::OK:
-            execute_command(cmdResult.cmd, mode, running);
-            break;
-        case CommandStatus::UNKNOWN_COMMAND:
-            std::cout << "Unknown command.\n";
-            break;
-        case CommandStatus::INVALID_ARGUMENT_COUNT:
-            std::cout << "Invalid argument count: " << cmdResult.cmd.commands.size() << '\n';
-            break;
-        case CommandStatus::INVALID_ARGUMENT:
-            std::cout << "Invalid argument: '" << cmdResult.cmd.commands[0] << "'\n";
-            break;
-        default:
-            break;
-    }
 }
 
 void execute_command(const Command& cmd, Mode& mode, bool& running)
@@ -211,8 +203,10 @@ void execute_command(const Command& cmd, Mode& mode, bool& running)
                     break;
                 }
                 case FileStatus::NOT_FOUND:
+                    std::cout << "File not found.\n";
                     break;
                 case FileStatus::PERMISSION_DENIED:
+                    std::cout << "Permission denied.\n";
                     break;         
                 default:
                     std::cout << "An error occurred.\n";
@@ -264,6 +258,30 @@ void execute_command(const Command& cmd, Mode& mode, bool& running)
             }
 
             break;
+        case CommandTypes::MOVE:
+        {
+            PathStatus result = change_path(cmd.commands[0]);
+
+            switch (result)
+            {
+                case PathStatus::SUCCESS:
+                    break;
+                case PathStatus::NOT_FOUND:
+                    std::cout << "'" << cmd.commands[0] << "' not found.\n";
+                    break;
+                case PathStatus::NOT_DIRECTORY:
+                    std::cout << "'" << cmd.commands[0] << "' not a directory.\n";
+                    break;
+                case PathStatus::PERMISSION_DENIED:
+                    std::cout << "Permission denied.\n";
+                    break;
+                default:
+                    std::cout << "An error occurred.\n";
+                    break;
+            }
+
+            break;
+        }
         case CommandTypes::IMAGE:
                 
 
@@ -276,11 +294,32 @@ void execute_command(const Command& cmd, Mode& mode, bool& running)
     }
 }
 
+void handle_command_result(const CommandResult& cmdResult, Mode& mode, bool& running)
+{
+    switch (cmdResult.status)
+    {
+        case CommandStatus::OK:
+            execute_command(cmdResult.cmd, mode, running);
+            break;
+        case CommandStatus::UNKNOWN_COMMAND:
+            std::cout << "Unknown command.\n";
+            break;
+        case CommandStatus::INVALID_ARGUMENT_COUNT:
+            std::cout << "Invalid argument count: " << cmdResult.cmd.commands.size() << '\n';
+            break;
+        case CommandStatus::INVALID_ARGUMENT:
+            std::cout << "Invalid argument: '" << cmdResult.cmd.commands[0] << "'\n";
+            break;
+        default:
+            break;
+    }
+}
+
 void run_command_cycle(bool& running, Mode& mode)
 {
     std::string input;
 
-    std::cout << "\e[35mirm> \e[0m";
+    std::cout << "\e[35mirm(" << get_current_folder() << ")> \e[0m";
     std::getline(std::cin, input);
 
     Command cmd = parse_input(input);
